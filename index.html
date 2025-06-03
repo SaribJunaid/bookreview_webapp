@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Interactive Book Review Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter for better aesthetics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for theme switching and general styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Light Theme (default) */
+        body.light {
+            background-color: #f0f2f6;
+            color: #000000;
+        }
+        .light .card {
+            background-color: #ffffff;
+            color: #000000;
+        }
+        .light input, .light textarea, .light select {
+            background-color: #ffffff;
+            color: #000000;
+            border-color: #e2e8f0; /* Tailwind gray-200 */
+        }
+        .light button {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: #ffffff;
+        }
+        .light button:hover {
+            background-color: #3182ce; /* Tailwind blue-600 */
+        }
+
+        /* Dark Theme */
+        body.dark {
+            background-color: #0e1117;
+            color: #ffffff;
+        }
+        .dark .card {
+            background-color: #262730;
+            color: #ffffff;
+        }
+        .dark input, .dark textarea, .dark select {
+            background-color: #262730;
+            color: #ffffff;
+            border-color: #4a5568; /* Tailwind gray-600 */
+        }
+        .dark button {
+            background-color: #63b3ed; /* Tailwind blue-400 */
+            color: #1a202c; /* Darker text for contrast */
+        }
+        .dark button:hover {
+            background-color: #4299e1; /* Tailwind blue-500 */
+        }
+
+        /* General input/textarea styling */
+        input, textarea, select {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem; /* rounded-lg */
+            border-width: 1px;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #4299e1; /* Tailwind blue-500 */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Focus ring */
+        }
+
+        /* Slider styling (basic) */
+        input[type="range"] {
+            -webkit-appearance: none; /* For Webkit browsers (Chrome, Safari) */
+            appearance: none; /* Standard property for cross-browser compatibility */
+            width: 100%;
+            height: 8px;
+            background: #d1d5db; /* Tailwind gray-300 */
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4299e1; /* Tailwind blue-500 */
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4299e1; /* Tailwind blue-500 */
+            cursor: pointer;
+        }
+
+        /* Tab button styling */
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .tab-button.active {
+            border-color: #4299e1; /* Tailwind blue-500 */
+            color: #4299e1; /* Tailwind blue-500 */
+        }
+        .light .tab-button:hover:not(.active) {
+            color: #2b6cb0; /* Tailwind blue-700 */
+        }
+        .dark .tab-button:hover:not(.active) {
+            color: #90cdf4; /* Tailwind blue-300 */
+        }
+
+        /* Toast message styling */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: white;
+            font-weight: 600;
+            min-width: 200px;
+            animation: fadeInOut 4s forwards; /* Animation for toast */
+        }
+        .toast.success { background-color: #48bb78; } /* Tailwind green-500 */
+        .toast.error { background-color: #ef4444; }   /* Tailwind red-500 */
+        .toast.warning { background-color: #fbbf24; } /* Tailwind amber-400 */
+        .toast.info { background-color: #60a5fa; }    /* Tailwind blue-400 */
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* Spinner styling */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4299e1; /* Tailwind blue-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="light">
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center w-full">📚 Interactive Book Review Hub</h1>
+            <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-md transition-colors duration-200">
+                🌞
+            </button>
+        </header>
+
+        <nav class="flex justify-center border-b border-gray-300 dark:border-gray-700 mb-8">
+            <button class="tab-button active" data-tab="addBook">➕ Add Book</button>
+            <button class="tab-button" data-tab="addReview">📝 Add Review</button>
+            <button class="tab-button" data-tab="viewReviews">👁️ View Reviews</button>
+            <button class="tab-button" data-tab="deleteBook">❌ Delete Book</button>
+        </nav>
+
+        <div id="tabContent" class="p-4 card rounded-lg shadow-lg">
+            <!-- Add Book Tab -->
+            <div id="addBook" class="tab-pane active">
+                <h2 class="text-2xl font-semibold mb-6">➕ Add a New Book</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="addTitle" class="block text-sm font-medium mb-1">Book Title</label>
+                        <input type="text" id="addTitle" class="w-full p-3 rounded-md border">
+                    </div>
+                    <div>
+                        <label for="addAuthor" class="block text-sm font-medium mb-1">Author</label>
+                        <input type="text" id="addAuthor" class="w-full p-3 rounded-md border">
+                    </div>
+                    <div>
+                        <label for="addGenre" class="block text-sm font-medium mb-1">Genre</label>
+                        <input type="text" id="addGenre" class="w-full p-3 rounded-md border">
+                    </div>
+                    <button id="addBookBtn" class="w-full p-3 rounded-md font-semibold mt-4 transition-colors duration-200">
+                        Add Book
+                        <span id="addBookSpinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Review Tab -->
+            <div id="addReview" class="tab-pane hidden">
+                <h2 class="text-2xl font-semibold mb-6">📝 Submit a Review</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="reviewTitle" class="block text-sm font-medium mb-1">Book Title (for Review)</label>
+                        <input type="text" id="reviewTitle" class="w-full p-3 rounded-md border">
+                    </div>
+                    <div>
+                        <label for="reviewerName" class="block text-sm font-medium mb-1">Your Name</label>
+                        <input type="text" id="reviewerName" class="w-full p-3 rounded-md border">
+                    </div>
+                    <div>
+                        <label for="reviewRating" class="block text-sm font-medium mb-1">Rating (<span id="ratingValue">5</span>/10)</label>
+                        <input type="range" id="reviewRating" min="0" max="10" value="5" class="w-full">
+                    </div>
+                    <div>
+                        <label for="reviewComment" class="block text-sm font-medium mb-1">Your Review</label>
+                        <textarea id="reviewComment" rows="4" class="w-full p-3 rounded-md border"></textarea>
+                    </div>
+                    <button id="addReviewBtn" class="w-full p-3 rounded-md font-semibold mt-4 transition-colors duration-200">
+                        Submit Review
+                        <span id="addReviewSpinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Reviews Tab -->
+            <div id="viewReviews" class="tab-pane hidden">
+                <h2 class="text-2xl font-semibold mb-6">👁️ View Book Reviews</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="viewTitle" class="block text-sm font-medium mb-1">Enter Book Title to View Reviews</label>
+                        <input type="text" id="viewTitle" class="w-full p-3 rounded-md border">
+                    </div>
+                    <button id="viewReviewsBtn" class="w-full p-3 rounded-md font-semibold mt-4 transition-colors duration-200">
+                        View Reviews
+                        <span id="viewReviewsSpinner" class="spinner hidden"></span>
+                    </button>
+                    <div id="reviewsDisplay" class="mt-6 space-y-4">
+                        <!-- Reviews will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Book Tab -->
+            <div id="deleteBook" class="tab-pane hidden">
+                <h2 class="text-2xl font-semibold mb-6">❌ Delete a Book and Its Reviews</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="deleteTitle" class="block text-sm font-medium mb-1">Book Title to Delete</label>
+                        <input type="text" id="deleteTitle" class="w-full p-3 rounded-md border">
+                    </div>
+                    <button id="deleteBookBtn" class="w-full p-3 rounded-md font-semibold mt-4 transition-colors duration-200">
+                        Delete Book
+                        <span id="deleteBookSpinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API URL for your FastAPI backend
+        const API_URL = "http://127.0.0.1:8000";
+
+        // --- DOM Elements ---
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // Add Book elements
+        const addTitleInput = document.getElementById('addTitle');
+        const addAuthorInput = document.getElementById('addAuthor');
+        const addGenreInput = document.getElementById('addGenre');
+        const addBookBtn = document.getElementById('addBookBtn');
+        const addBookSpinner = document.getElementById('addBookSpinner');
+
+        // Add Review elements
+        const reviewTitleInput = document.getElementById('reviewTitle');
+        const reviewerNameInput = document.getElementById('reviewerName');
+        const reviewRatingInput = document.getElementById('reviewRating');
+        const ratingValueSpan = document.getElementById('ratingValue');
+        const reviewCommentInput = document.getElementById('reviewComment');
+        const addReviewBtn = document.getElementById('addReviewBtn');
+        const addReviewSpinner = document.getElementById('addReviewSpinner');
+
+        // View Reviews elements
+        const viewTitleInput = document.getElementById('viewTitle');
+        const viewReviewsBtn = document.getElementById('viewReviewsBtn');
+        const viewReviewsSpinner = document.getElementById('viewReviewsSpinner');
+        const reviewsDisplay = document.getElementById('reviewsDisplay');
+
+        // Delete Book elements
+        const deleteTitleInput = document.getElementById('deleteTitle');
+        const deleteBookBtn = document.getElementById('deleteBookBtn');
+        const deleteBookSpinner = document.getElementById('deleteBookSpinner');
+
+        // --- Theme Toggle Functionality ---
+        let currentTheme = 'light'; // Default theme
+
+        function toggleTheme() {
+            if (currentTheme === 'light') {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeToggle.textContent = '🌚';
+                currentTheme = 'dark';
+            } else {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeToggle.textContent = '🌞';
+                currentTheme = 'light';
+            }
+        }
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // --- Tab Switching Functionality ---
+        function showTab(tabId) {
+            // Hide all tab panes
+            tabPanes.forEach(pane => pane.classList.add('hidden'));
+            // Deactivate all tab buttons
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            // Show the selected tab pane
+            document.getElementById(tabId).classList.remove('hidden');
+            // Activate the corresponding tab button
+            document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+                showTab(tabId);
+            });
+        });
+
+        // --- Toast Notification Function ---
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // --- Helper to show/hide spinner ---
+        function toggleSpinner(spinnerElement, show) {
+            if (show) {
+                spinnerElement.classList.remove('hidden');
+            } else {
+                spinnerElement.classList.add('hidden');
+            }
+        }
+
+        // --- API Functions ---
+
+        // Add Book
+        addBookBtn.addEventListener('click', async () => {
+            const title = addTitleInput.value.trim();
+            const author = addAuthorInput.value.trim();
+            const genre = addGenreInput.value.trim();
+
+            if (!title || !author || !genre) {
+                showToast("Please fill all fields!", "warning");
+                return;
+            }
+
+            toggleSpinner(addBookSpinner, true);
+            try {
+                const response = await fetch(`${API_URL}/add_book`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, author, genre })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast(data.message, "success");
+                    addTitleInput.value = '';
+                    addAuthorInput.value = '';
+                    addGenreInput.value = '';
+                } else {
+                    showToast(data.message || "Failed to add book.", "error");
+                }
+            } catch (error) {
+                console.error("Error adding book:", error);
+                showToast("Network error or server unreachable.", "error");
+            } finally {
+                toggleSpinner(addBookSpinner, false);
+            }
+        });
+
+        // Add Review
+        reviewRatingInput.addEventListener('input', () => {
+            ratingValueSpan.textContent = reviewRatingInput.value;
+        });
+
+        addReviewBtn.addEventListener('click', async () => {
+            const title = reviewTitleInput.value.trim();
+            const reviewer = reviewerNameInput.value.trim();
+            const rating = parseInt(reviewRatingInput.value);
+            const comment = reviewCommentInput.value.trim();
+
+            if (!title || !reviewer || !comment) {
+                showToast("Please fill all fields!", "warning");
+                return;
+            }
+
+            toggleSpinner(addReviewSpinner, true);
+            try {
+                const response = await fetch(`${API_URL}/add_review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, reviewer, rating, comment })
+                });
+                const data = await response.json();
+                if (response.ok && data.data) { // Check for 'data' key as per FastAPI response
+                    showToast("Review successfully added.", "success");
+                    reviewTitleInput.value = '';
+                    reviewerNameInput.value = '';
+                    reviewRatingInput.value = '5';
+                    ratingValueSpan.textContent = '5';
+                    reviewCommentInput.value = '';
+                } else {
+                    showToast(data.message || "Failed to add review.", "error");
+                }
+            } catch (error) {
+                console.error("Error adding review:", error);
+                showToast("Network error or server unreachable.", "error");
+            } finally {
+                toggleSpinner(addReviewSpinner, false);
+            }
+        });
+
+        // View Reviews
+        viewReviewsBtn.addEventListener('click', async () => {
+            const title = viewTitleInput.value.trim();
+
+            if (!title) {
+                showToast("Enter a title to search!", "warning");
+                return;
+            }
+
+            toggleSpinner(viewReviewsSpinner, true);
+            reviewsDisplay.innerHTML = ''; // Clear previous reviews
+            try {
+                const response = await fetch(`${API_URL}/view_reviews?title=${encodeURIComponent(title)}`);
+                const data = await response.json();
+
+                if (response.ok && data.data) {
+                    const reviews = data.data;
+                    if (reviews.length > 0) {
+                        reviews.forEach(r => {
+                            const reviewCard = document.createElement('div');
+                            reviewCard.className = 'p-4 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 card';
+                            reviewCard.innerHTML = `
+                                <p class="font-semibold text-lg">👤 ${r.reviewer} rated <span class="text-blue-500">${r.rating} / 10</span></p>
+                                <p class="italic text-gray-700 dark:text-gray-300">📝 ${r.comment}</p>
+                            `;
+                            reviewsDisplay.appendChild(reviewCard);
+                        });
+                    } else {
+                        reviewsDisplay.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400">No reviews yet for this book.</p>';
+                        showToast("No reviews found for this book.", "info");
+                    }
+                } else {
+                    reviewsDisplay.innerHTML = '<p class="text-center text-red-500 dark:text-red-400">Book does not exist or an error occurred.</p>';
+                    showToast(data.message || "Book does not exist or an error occurred.", "error");
+                }
+            } catch (error) {
+                console.error("Error viewing reviews:", error);
+                showToast("Network error or server unreachable.", "error");
+            } finally {
+                toggleSpinner(viewReviewsSpinner, false);
+            }
+        });
+
+        // Delete Book
+        deleteBookBtn.addEventListener('click', async () => {
+            const title = deleteTitleInput.value.trim();
+
+            if (!title) {
+                showToast("Please enter a title.", "warning");
+                return;
+            }
+
+            toggleSpinner(deleteBookSpinner, true);
+            try {
+                const response = await fetch(`${API_URL}/book/${encodeURIComponent(title)}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast(data.message, "success");
+                    deleteTitleInput.value = '';
+                } else {
+                    showToast(data.error || "Failed to delete book.", "error");
+                }
+            } catch (error) {
+                console.error("Error deleting book:", error);
+                showToast("Network error or server unreachable.", "error");
+            } finally {
+                toggleSpinner(deleteBookSpinner, false);
+            }
+        });
+
+        // Initialize the first tab on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('addBook');
+        });
+
+    </script>
+</body>
+</html>
